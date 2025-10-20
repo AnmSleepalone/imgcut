@@ -10,6 +10,7 @@ use tokio::sync::mpsc;
 use anyhow::Result;
 use serde::Serialize;
 use thiserror::Error;
+use std::time::{Duration, Instant};
 
 #[derive(Debug, Serialize)]
 enum ProcessMessage {
@@ -41,6 +42,8 @@ async fn greet(
     height: u32
 ) -> Result<String, String> {
     let (tx, mut rx) = mpsc::channel(100);
+    //程序开始时间
+    let start = Instant::now();
 
     tokio::spawn(async move {
         if let Err(e) = process_images(path, output_dir, x, y, width, height, tx).await {
@@ -50,6 +53,10 @@ async fn greet(
 
     // 使用事件发送进度更新
     tokio::spawn(async move {
+        let start_mes = format!("开始处理,时间为 {}",start.elapsed().as_millis());
+        println!("{}", start_mes);
+        window.emit("greet-start", start_mes).unwrap();
+
         while let Some(msg) = rx.recv().await {
             match msg {
                 ProcessMessage::Progress(message) => {
@@ -64,6 +71,12 @@ async fn greet(
                 }
             }
         }
+
+        let end = Instant::now();
+        let duration = end - start;
+        let end_mes = format!("处理结束,时间为 {},共耗时 {} ",end.elapsed().as_millis(),duration.as_millis());
+        println!("{}", end_mes);
+        window.emit("greet-end", end_mes).unwrap();
     });
 
     Ok("全部完成".to_string())

@@ -144,11 +144,18 @@ const confirm = async () => {
 };
 
 // 事件监听器
+const startlisten = ref<(() => void) | null>(null);
 const progressUnlisten = ref<(() => void) | null>(null);
 const errorUnlisten = ref<(() => void) | null>(null);
 const completedUnlisten = ref<(() => void) | null>(null);
+const endlisten = ref<(() => void) | null>(null);
 
 onMounted(async () => {
+
+  startlisten.value = await event.listen('greet-start', (event) => {
+    log.value += `${event.payload as string}\n`;
+  });
+
   progressUnlisten.value = await event.listen('greet-progress', (event) => {
     log.value += `${event.payload as string}\n`;
   });
@@ -159,6 +166,10 @@ onMounted(async () => {
 
   completedUnlisten.value = await event.listen('greet-completed', () => {
     log.value += '处理完成\n';
+  });
+
+  endlisten.value = await event.listen('greet-end', (event) => {
+    log.value += `${event.payload as string}\n`;
   });
 });
 
